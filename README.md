@@ -1,94 +1,61 @@
-# SmartPulse Attendance Management System 🚀
+# SmartPulse AMS - Attendance Management System
 
-A modern, production-ready Attendance Management System featuring **QR Code check-in**, **GPS Geofence radius verification**, **Webcam selfie identity verification fallback**, **Leave Management**, **Admin Tabular Dashboard**, and **Excel (`.xlsx`) Export**.
+SmartPulse AMS is a modern, responsive **Attendance Management System** featuring Geofencing GPS tracking, Webcam Selfie identity verification, Office Kiosk QR scanning, Excel import/export, and Two-Factor (2FA) Email OTP authentication.
+
+Built with **Pure HTML5, CSS3, Vanilla JavaScript (ES6)** and a lightweight **Client-Side Storage Engine**, this project requires **ZERO dependencies (No XAMPP, No Apache, No PHP, No Node.js, No MySQL)**.
+
+---
+
+## 🚀 How to Run (Zero Dependencies Required)
+
+### Method 1: Double-Click `index.html` (Easiest)
+1. Open the project folder on your computer.
+2. Double-click **`index.html`** to open it in Chrome, Microsoft Edge, Firefox, or Safari.
+3. That's it! The application runs 100% in your web browser with local data persistence.
+
+### Method 2: Any Web Host / Static Server
+Upload `index.html`, `css/`, and `js/` to any static web hosting platform (GitHub Pages, Netlify, Vercel, Firebase Hosting, cPanel).
+
+---
+
+## 🔒 Setup & Authentication Flow
+
+1. **First-Time System Setup (Main Admin Registration)**:
+   - When launching the application for the first time, switch to the **Admin Portal** or click **Register Main Administrator**.
+   - Fill in your name, email address, password, department, and position title.
+   - Upon registration, your account is set as the **Primary Main Administrator**.
+
+2. **Automatic Admin Registration Lock**:
+   - Immediately after the Main Administrator registers, open admin registration **automatically locks/closes**.
+   - No additional admin accounts can be created directly.
+
+3. **Subsequent Admin Access Requests**:
+   - Other users who require administrative access can submit a request under **Request Access**.
+   - The Main Admin can review and **Approve** or **Reject** pending requests inside the **Admin Dashboard**.
+
+4. **Registering Employees**:
+   - The Main Admin (and approved admins) can register employees individually using the **Register New Employee** modal or bulk import them from an Excel file (`.xlsx`, `.csv`).
+   - Registered employees can then sign in via the **Employee Portal** to punch in/out, view personal attendance logs, and submit leave requests.
 
 ---
 
 ## 🌟 Key Features
 
-1. **QR Code Attendance System**:
-   - **Stationary Kiosk Generator**: Admin can generate & print QR codes for office desks and entry gates.
-   - **Mobile/Desktop Camera QR Scanner**: Scan office QR codes to check in.
-2. **GPS Geofence Verification**:
-   - **Haversine Distance Radar**: Calculates exact distance (in meters) between user GPS and Office HQ.
-   - **Configurable Radius Perimeter**: Set allowed radius (e.g. 50m, 200m, 500m).
-3. **Selfie Capture Verification (Fallback)**:
-   - Live Webcam Feed snapshot for employees outside the allowed geofence radius or when QR scan is unavailable.
-   - Automatic watermark with timestamp & GPS status attached directly to attendance logs.
-4. **Leave Management System**:
-   - Apply for Casual, Sick, Earned, or Unpaid leaves with duration calculator.
-   - Admin panel to **Approve** or **Reject** pending employee leave requests.
-5. **Admin Tabular Dashboard**:
-   - Live analytics: Total Staff, Present Rate, Late Arrivals, Geofence Alerts.
-   - Master Directory Table with search, status filters, and selfie photo viewer.
-6. **Excel Report Export**:
-   - Download complete attendance logs formatted cleanly into `.xlsx` spreadsheets (includes Summary Overview & Detailed Log sheets).
+1. **Employee Portal**:
+   - Geofence-verified Punch In / Punch Out.
+   - Real-time GPS location radar feedback.
+   - Webcam Selfie Identity Check-In.
+   - Office Kiosk QR Code Scanner Check-In.
+   - Personal attendance history table.
+   - Leave Application workflow.
 
----
+2. **Administrator Dashboard**:
+   - Master Attendance Directory with real-time search filters.
+   - Add single employee or bulk import rosters from Excel (`.xlsx`, `.csv`).
+   - Export master attendance logs to Excel report files.
+   - Approve / Reject leave requests.
+   - System Geofence HQ location & allowed radius configuration.
+   - Admin access requests & approval management.
+   - Two-Factor (2FA) OTP authentication.
+   - Local JSON Database Backup & Restore.
 
-## 📁 Project Folder Structure
-
-```
-attendance-management-system/
-├── package.json
-├── vite.config.js
-├── index.html
-├── README.md
-├── server/                          # Production Express API Backend
-│   └── index.js                    # API Endpoints for Attendance, Leaves & Geofence
-└── src/
-    ├── main.jsx                    # Application Entrypoint
-    ├── App.jsx                     # Main Layout & Role Switcher
-    ├── styles/
-    │   └── index.css               # Modern Glassmorphic Dark Design System
-    ├── context/
-    │   └── AttendanceContext.jsx    # Global State Manager & GPS Geolocation Tracker
-    ├── components/
-    │   ├── common/                 # Header, StatusBadge, Navbar
-    │   ├── employee/               # CheckInCard, QRScannerModal, SelfieCaptureModal, LeaveApplicationModal
-    │   └── admin/                  # DashboardOverview, AttendanceTable, GeofenceSettings, LeaveApprovalTable, QrGeneratorModal
-    └── utils/
-        ├── geofence.js             # Haversine Distance Formula
-        ├── excelExporter.js        # XLSX Excel File Builder
-        └── storage.js              # LocalStorage & Realistic Seed Data
-```
-
----
-
-## 🛠️ How to Run Locally
-
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Start Development Server**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your web browser.
-
-3. **Start Express Backend API** (Optional for full-stack integration):
-   ```bash
-   npm run server
-   ```
-
-4. **Production Build**:
-   ```bash
-   npm run build
-   ```
-
----
-
-## 🚀 Live Deployment Guide
-
-### Deploying Frontend to Vercel / Netlify:
-1. Push project repository to GitHub.
-2. Connect repository to [Vercel](https://vercel.com) or [Netlify](https://netlify.com).
-3. Set build command to `npm run build` and output folder to `dist`.
-4. Deploy!
-
-### Deploying Full-Stack / Backend to Render / Railway:
-1. Connect repository to [Render](https://render.com) or [Railway](https://railway.app).
-2. Set start command to `npm run server`.
-3. Set environment variable `PORT=5000`.

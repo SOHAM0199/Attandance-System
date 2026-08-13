@@ -1,0 +1,15 @@
+# SmartPulse AMS - Apache Server Configuration
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+</IfModule>
+
+# Protect SQLite database files from direct URL downloading
+<FilesMatch "\.(sqlite|db)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# Enable directory index
+DirectoryIndex index.html

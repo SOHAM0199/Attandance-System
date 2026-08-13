@@ -1,17 +1,935 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SmartPulse | Next-Gen Attendance Management & Geofencing System</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartPulse AMS - Attendance Management System</title>
+  <meta name="description"
+    content="Pure HTML, CSS, JavaScript Attendance Management System with Geofencing and SQLite Database persistence.">
+
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- SheetJS Excel Library -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- HTML5 QR Code Scanner -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+<body>
+
+  <!-- Top Application Header Navbar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+          <h2 style="font-size: 1.25rem; line-height: 1.2;">SmartPulse AMS</h2>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">100% Client-Side • Standalone
+            Engine</span>
+        </div>
+      </div>
+
+      <!-- Navigation & Role Switcher -->
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="nav-role-switcher">
+          <button class="role-btn active" id="btn-role-employee" onclick="switchRole('employee')">
+            <i class="fa-solid fa-user"></i> Employee Portal
+          </button>
+          <button class="role-btn" id="btn-role-admin" onclick="switchRole('admin')">
+            <i class="fa-solid fa-shield-halved"></i> Admin Portal
+          </button>
+        </div>
+
+        <!-- User Authentication Status Pill -->
+        <div id="user-header-status" class="user-status-pill">
+          <span class="status-indicator"></span>
+          <span id="header-username" style="font-weight: 600;">Not Logged In</span>
+          <button class="btn btn-secondary btn-sm" id="btn-auth-action" onclick="openLoginModal()"
+            style="margin-left: 0.25rem;">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Area -->
+  <main class="container">
+
+    <!-- ================= EMPLOYEE PORTAL VIEW ================= -->
+    <section id="employee-view">
+
+      <!-- Locked Barrier (If Employee Not Authenticated) -->
+      <div id="employee-lock-barrier" class="glass-panel"
+        style="padding: 3.5rem 2rem; text-align: center; margin: 2rem 0;">
+        <div
+          style="background: rgba(99, 102, 241, 0.15); width: 68px; height: 68px; border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: var(--primary); font-size: 1.8rem;">
+          <i class="fa-solid fa-user-lock"></i>
+        </div>
+        <h2 style="font-size: 1.6rem; margin-bottom: 0.5rem;">Employee Portal Locked</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 500px; margin: 0 auto 1.75rem;">
+          Please log in with your Employee ID or registered Email address to access the attendance check-in terminal, leave applications, and personal history logs.
+        </p>
+        <button class="btn btn-primary" onclick="openLoginModal()">
+          <i class="fa-solid fa-right-to-bracket"></i> Login to Employee Portal
+        </button>
+      </div>
+
+      <!-- Active Employee Dashboard Content -->
+      <div id="employee-dashboard-content" style="display: none;">
+
+        <!-- Check-In / Check-Out Card -->
+        <div class="glass-panel" style="padding: 2.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2rem;">
+
+            <div style="flex: 1; min-width: 300px;">
+              <div class="badge badge-info" style="margin-bottom: 0.75rem;">
+                <i class="fa-solid fa-clock"></i> Real-time Clock
+              </div>
+              <h1 id="live-time-display" style="font-size: 2.8rem; letter-spacing: -1px; margin-bottom: 0.25rem;">00:00:00
+                AM</h1>
+              <p id="live-date-display"
+                style="color: var(--text-muted); font-weight: 500; font-size: 1rem; margin-bottom: 1.5rem;">Loading
+                date...</p>
+
+              <!-- Current User Badge -->
+              <div id="active-user-banner"
+                style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--border-highlight); padding: 0.85rem 1.25rem; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 0.85rem;">
+                <div
+                  style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                  <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div>
+                  <div id="emp-card-name" style="font-weight: 700; color: #fff;">Guest User</div>
+                  <div id="emp-card-meta" style="font-size: 0.8rem; color: var(--text-muted);">Please log in to register
+                    attendance</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Geofence Pulse Radar & Check-In Action Button -->
+            <div style="text-align: center; flex: 1; min-width: 280px;">
+              <div class="radar-pulse">
+                <i class="fa-solid fa-location-crosshairs" style="font-size: 2rem; color: var(--primary);"></i>
+              </div>
+
+              <div id="geofence-radar-status"
+                style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Locating HQ Geofence Coordinates...
+              </div>
+
+              <div style="display: flex; justify-content: center; gap: 1rem;">
+                <button class="btn btn-success" id="btn-punch-in" onclick="openMandatoryVerificationModal()"
+                  style="padding: 0.9rem 2rem; font-size: 1.05rem;">
+                  <i class="fa-solid fa-fingerprint"></i> Punch In
+                </button>
+                <button class="btn btn-danger" id="btn-punch-out" onclick="handlePunchOutAction()"
+                  style="padding: 0.9rem 2rem; font-size: 1.05rem; display: none;">
+                  <i class="fa-solid fa-right-from-bracket"></i> Punch Out
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Verification Quick Actions Bar -->
+          <div
+            style="border-top: 1px solid var(--border-color); margin-top: 2rem; padding-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
+            <div style="width: 100%; text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+              <i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> <strong>Mandatory Check-In Verification:</strong> Select Selfie or QR Code scan to punch in
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openSelfieModal()">
+              <i class="fa-solid fa-camera" style="color: var(--secondary);"></i> Selfie Identity Check-In
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openQrScannerModal()">
+              <i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> Office QR Scan Check-In
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openLeaveModal()">
+              <i class="fa-solid fa-calendar-plus" style="color: var(--warning);"></i> Apply for Leave
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Sanctioned Leave / Holiday Announcement Banner -->
+        <div id="emp-sanctioned-leave-banner" style="display: none; margin-bottom: 2rem;"></div>
+
+        <!-- Employee Personal History Table -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-history"
+                style="color: var(--primary); margin-right: 0.5rem;"></i> My Personal Attendance History</h3>
+            <span class="badge badge-neutral" id="emp-log-count">0 Records</span>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Check-In</th>
+                  <th>Check-Out</th>
+                  <th>Method</th>
+                  <th>Selfie</th>
+                  <th>Geofence Verification</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="user-attendance-tbody">
+                <tr>
+                  <td colSpan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    Please log in to view your attendance history.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employee Personal Leave Applications & Sanctioned Status -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-umbrella-beach" style="color: var(--warning);"></i> 
+                My Sanctioned Holidays & Leave Applications
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                Track HR approval status for your submitted leave requests
+              </p>
+            </div>
+            <button class="btn btn-warning btn-sm" onclick="openLeaveModal()">
+              <i class="fa-solid fa-plus"></i> Apply New Leave
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Leave Category</th>
+                  <th>Date Range</th>
+                  <th>Reason</th>
+                  <th>Sanctioned Status</th>
+                  <th>Submitted Date</th>
+                </tr>
+              </thead>
+              <tbody id="user-leaves-tbody">
+                <tr>
+                  <td colSpan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No leave requests submitted yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= ADMIN PORTAL VIEW ================= -->
+    <section id="admin-view" style="display: none;">
+
+      <!-- Locked Barrier (If Admin Not Authenticated) -->
+      <div id="admin-lock-barrier" class="glass-panel"
+        style="padding: 3.5rem 2rem; text-align: center; margin: 2rem 0;">
+        <div
+          style="background: rgba(239, 68, 68, 0.15); width: 68px; height: 68px; border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: #f87171; font-size: 1.8rem;">
+          <i class="fa-solid fa-lock" id="admin-lock-icon"></i>
+        </div>
+        <div id="admin-lock-badge" class="badge badge-warning" style="margin-bottom: 0.75rem; display: none;">
+          <i class="fa-solid fa-star"></i> Initial System Setup Required
+        </div>
+        <h2 id="admin-lock-title" style="font-size: 1.6rem; margin-bottom: 0.5rem;">Administrator Dashboard Locked</h2>
+        <p id="admin-lock-desc" style="color: var(--text-muted); font-size: 0.95rem; max-width: 500px; margin: 0 auto 1.75rem;">
+          Admin Email & Password verification or Master 2FA Authentication is required to view employee rosters, modify
+          geofence coordinates, and approve leave requests.
+        </p>
+        <button class="btn btn-primary" id="btn-admin-auth-trigger" onclick="openAdminLoginModal()">
+          <i class="fa-solid fa-key"></i> Authenticate / Request Admin Access
+        </button>
+      </div>
+
+      <!-- Active Admin Dashboard Content -->
+      <div id="admin-dashboard-content" style="display: none;">
+
+        <!-- Admin Header Toolbar -->
+        <div
+          style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem;">
+          <div>
+            <h1 style="font-size: 1.8rem; margin-bottom: 0.25rem;">Administrator Control Center</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Manage employee database, attendance logs, geofence
+              radius, and leave applications.</p>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="openAddEmpModal()">
+              <i class="fa-solid fa-user-plus"></i> Add Employee
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openExcelImportModal()">
+              <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Import Excel Roster
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="exportAttendanceToExcel()">
+              <i class="fa-solid fa-file-export" style="color: var(--primary);"></i> Export Excel Report
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="openKioskQrModal()">
+              <i class="fa-solid fa-qrcode"></i> Office Kiosk QR Code
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="handleAdminLogout()">
+              <i class="fa-solid fa-right-from-bracket"></i> Lock & Logout Admin
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Stat Overview Cards -->
+        <div class="dashboard-grid">
+          <div class="glass-panel stat-card">
+            <div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Total Employees</div>
+              <div id="stat-total-emp" style="font-size: 1.8rem; font-weight: 800; color: #fff;">0</div>
+            </div>
+            <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--primary);">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Present Today</div>
+              <div id="stat-present-today" style="font-size: 1.8rem; font-weight: 800; color: #34d399;">0</div>
+            </div>
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Pending Leave Requests
+              </div>
+              <div id="stat-pending-leaves" style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">0</div>
+            </div>
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Geofence Perimeter
+              </div>
+              <div id="stat-geofence-radius" style="font-size: 1.8rem; font-weight: 800; color: #60a5fa;">200m</div>
+            </div>
+            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+              <i class="fa-solid fa-location-dot"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Attendance Directory Table -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div
+            style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-clipboard-user"
+                style="color: var(--primary); margin-right: 0.5rem;"></i> Master Attendance Records</h3>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <input type="text" id="attendance-search" class="glass-input" placeholder="Search employee name or ID..."
+                onkeyup="filterMasterLogs()" style="max-width: 240px; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+              <button class="btn btn-primary btn-sm" onclick="openManualLogModal()">
+                <i class="fa-solid fa-plus"></i> Manual Attendance Entry
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Check-In</th>
+                  <th>Check-Out</th>
+                  <th>Verification Method</th>
+                  <th>Selfie</th>
+                  <th>Location Status</th>
+                  <th>Attendance Status</th>
+                </tr>
+              </thead>
+              <tbody id="admin-attendance-tbody">
+                <tr>
+                  <td colSpan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    Loading SQLite attendance records...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employee Directory Table -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-id-card"
+                style="color: var(--secondary); margin-right: 0.5rem;"></i> Employee Directory</h3>
+            <span class="badge badge-info" id="admin-emp-count">0 Employees</span>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Employee ID</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Position</th>
+                  <th>First Login?</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-employees-tbody">
+                <tr>
+                  <td colSpan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    Loading employee directory...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Leave Approvals Table -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-calendar-check"
+                style="color: var(--warning); margin-right: 0.5rem;"></i> Employee Leave Requests</h3>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Leave Type</th>
+                  <th>Date Range</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-leaves-tbody">
+                <tr>
+                  <td colSpan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    Loading leave requests...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Admin Access Requests Table -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem;"><i class="fa-solid fa-user-shield"
+                style="color: #60a5fa; margin-right: 0.5rem;"></i> Pending Admin Authorization Requests</h3>
+          </div>
+
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Reason for Access</th>
+                  <th>Date Submitted</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-requests-tbody">
+                <tr>
+                  <td colSpan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No pending administrator requests.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Geofence & SMTP Settings -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <h3 style="font-size: 1.2rem; margin-bottom: 1rem;"><i class="fa-solid fa-sliders"
+              style="color: var(--primary); margin-right: 0.5rem;"></i> System Geofence Configuration</h3>
+          <form id="geofence-form" onsubmit="handleSaveGeofence(event)">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Office Headquarters Name</label>
+                <input type="text" id="geo-office-name" class="glass-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">HQ Latitude</label>
+                <input type="number" step="any" id="geo-hq-lat" class="glass-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">HQ Longitude</label>
+                <input type="number" step="any" id="geo-hq-lng" class="glass-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Allowed Radius (Meters)</label>
+                <input type="number" id="geo-radius" class="glass-input" required>
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 1rem;">
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem;">
+                  <input type="checkbox" id="geo-enforce" checked
+                    style="width: 18px; height: 18px; accent-color: var(--primary);">
+                  Enforce strict geofence radius validation
+                </label>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="setCurrentLocationAsHQ()">
+                  <i class="fa-solid fa-location-crosshairs" style="color: var(--primary);"></i> Use My Current GPS Location
+                </button>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-floppy-disk"></i> Save Configuration
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Client-Side Data Storage & Backup Panel -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-top: 1.5rem;">
+          <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-database"
+              style="color: var(--secondary); margin-right: 0.5rem;"></i> Local Data Storage & Backup Manager</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+            This system runs <strong>100% Client-Side</strong> inside your browser with zero server dependencies (No
+            XAMPP, Apache, or PHP required). All data is saved securely in your local browser storage.
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+            <button class="btn btn-secondary btn-sm" onclick="exportSystemBackup()">
+              <i class="fa-solid fa-download"></i> Export JSON Backup
+            </button>
+            <label class="btn btn-secondary btn-sm" style="margin: 0; cursor: pointer;">
+              <i class="fa-solid fa-upload"></i> Restore JSON Backup
+              <input type="file" accept=".json" onchange="importSystemBackup(this)" style="display: none;">
+            </label>
+            <button class="btn btn-danger btn-sm" onclick="resetSystemData()">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Reset to Factory Seeds
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ================= MODAL DIALOGS ================= -->
+
+  <!-- Employee Login Modal -->
+  <div class="modal-overlay" id="modal-emp-login">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-right-to-bracket" style="color: var(--primary);"></i> Employee Portal Login</h3>
+        <button class="close-btn" onclick="closeModal('modal-emp-login')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleEmployeeLoginSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Employee ID or Email</label>
+          <input type="text" id="login-emp-id" class="glass-input"
+            placeholder="e.g. EMP-101 or alex.rivera@globaltech.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="login-emp-pass" class="glass-input" placeholder="Default: Emp@101" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+          Login to Employee Portal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- First Time Password Change Modal -->
+  <div class="modal-overlay" id="modal-first-login">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-lock" style="color: var(--warning);"></i> Set Up Permanent Password</h3>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+        This is your first login! Please choose a new confidential password to secure your employee portal.
+      </p>
+      <form onsubmit="handleFirstPasswordSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">New Confidential Password</label>
+          <input type="password" id="first-new-pass" class="glass-input" placeholder="At least 4 characters" required
+            minlength="4">
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+          Update Password & Proceed
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Login & Access Request Modal -->
+  <div class="modal-overlay" id="modal-admin-login">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="admin-modal-header-title"><i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Admin Authentication</h3>
+        <button class="close-btn" onclick="closeModal('modal-admin-login')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="admin-modal-tab-bar"
+        style="display: flex; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+        <button class="btn btn-secondary btn-sm" id="tab-btn-admin-setup" onclick="switchAdminTab('setup')"
+          style="flex: 1; display: none;"><i class="fa-solid fa-user-shield"></i> First-Time Setup</button>
+        <button class="btn btn-secondary btn-sm" id="tab-btn-admin-login" onclick="switchAdminTab('login')"
+          style="flex: 1;">Login</button>
+        <button class="btn btn-secondary btn-sm" id="tab-btn-admin-req" onclick="switchAdminTab('request')"
+          style="flex: 1;">Request Access</button>
+      </div>
+
+      <!-- First-Time Main Admin Setup Form -->
+      <form id="admin-setup-form" onsubmit="handleRegisterMainAdminSubmit(event)" style="display: none;">
+        <div class="badge badge-warning" style="margin-bottom: 1rem; width: 100%; justify-content: center; padding: 0.6rem;">
+          <i class="fa-solid fa-star"></i> Create Primary Main Administrator Account
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="admin-setup-name" class="glass-input" placeholder="e.g. System Administrator" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Main Admin Email</label>
+          <input type="email" id="admin-setup-email" class="glass-input" placeholder="admin@yourcompany.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confidential Admin Password</label>
+          <input type="password" id="admin-setup-pass" class="glass-input" placeholder="At least 4 characters" required minlength="4">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input type="text" id="admin-setup-dept" class="glass-input" value="Management" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position Title</label>
+            <input type="text" id="admin-setup-pos" class="glass-input" value="Main Administrator" required>
+          </div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          <i class="fa-solid fa-circle-info"></i> Note: Once registered, open admin registration will automatically lock. Other users must request access.
+        </p>
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+          <i class="fa-solid fa-lock"></i> Create Main Admin & Lock Setup
+        </button>
+      </form>
+
+      <!-- Admin Direct Password Login Form -->
+      <form id="admin-login-step1" onsubmit="handleAdminLoginStep1(event)">
+        <div class="form-group">
+          <label class="form-label">Admin Email</label>
+          <input type="email" id="admin-login-email" class="glass-input" placeholder="admin@yourcompany.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="admin-login-pass" class="glass-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <i class="fa-solid fa-right-to-bracket"></i> Login to Administrator Dashboard
+        </button>
+      </form>
+
+      <!-- Admin Request Access Form -->
+      <form id="admin-request-form" onsubmit="handleAdminRequestSubmit(event)" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="admin-req-name" class="glass-input" placeholder="e.g. Marcus Vance" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Work Email</label>
+          <input type="email" id="admin-req-email" class="glass-input" placeholder="marcus@yourcompany.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Requested Password</label>
+          <input type="password" id="admin-req-pass" class="glass-input" placeholder="••••••••" required minlength="4">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Administrator Access</label>
+          <textarea id="admin-req-reason" class="glass-input" placeholder="HR / Operations Manager access request..."
+            required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Submit Request to System Admin
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Mandatory Punch In Verification Modal -->
+  <div class="modal-overlay" id="modal-mandatory-verification">
+    <div class="modal-content" style="text-align: center; max-width: 480px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-shield-halved" style="color: var(--primary);"></i> Identity Verification Required</h3>
+        <button class="close-btn" onclick="closeModal('modal-mandatory-verification')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="padding: 1rem 0;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary-glow); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: var(--primary); font-size: 1.8rem;">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <h4 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Mandatory Attendance Verification</h4>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          To complete your attendance check-in, identity verification is mandatory. Please select one of the allowed methods below:
+        </p>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <button class="btn btn-primary" onclick="closeModal('modal-mandatory-verification'); openSelfieModal();" style="padding: 1rem; font-size: 1rem; width: 100%; justify-content: center;">
+            <i class="fa-solid fa-camera" style="font-size: 1.2rem;"></i> Selfie Identity Check-In
+          </button>
+          
+          <button class="btn btn-secondary" onclick="closeModal('modal-mandatory-verification'); openQrScannerModal();" style="padding: 1rem; font-size: 1rem; width: 100%; justify-content: center; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color);">
+            <i class="fa-solid fa-qrcode" style="font-size: 1.2rem; color: var(--primary);"></i> Office QR Code Scan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Code Scanner Modal -->
+  <div class="modal-overlay" id="modal-qr-scan">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> Scan Office QR Pass</h3>
+        <button class="close-btn" onclick="closeModal('modal-qr-scan'); stopQrScanner();"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="qr-reader"
+        style="width: 100%; border-radius: var(--radius-md); overflow: hidden; background: #000; min-height: 250px;">
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem;">Point camera at the Office Kiosk QR
+        Code to automatically punch in.</p>
+    </div>
+  </div>
+
+  <!-- Selfie Capture Modal -->
+  <div class="modal-overlay" id="modal-selfie">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera" style="color: var(--secondary);"></i> Selfie Identity Check-In</h3>
+        <button class="close-btn" onclick="closeModal('modal-selfie'); stopSelfieCamera();"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div
+        style="position: relative; background: #000; border-radius: var(--radius-md); overflow: hidden; min-height: 240px;">
+        <video id="selfie-video" autoplay playsinline style="width: 100%; display: block;"></video>
+        <canvas id="selfie-canvas" style="display: none;"></canvas>
+      </div>
+      <button class="btn btn-primary" onclick="captureSelfieAndCheckIn()" style="margin-top: 1.25rem; width: 100%;">
+        <i class="fa-solid fa-circle-dot"></i> Snap Selfie & Punch In
+      </button>
+    </div>
+  </div>
+
+  <!-- View Selfie Modal Lightbox -->
+  <div class="modal-overlay" id="modal-view-selfie">
+    <div class="modal-content" style="text-align: center; max-width: 520px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera" style="color: var(--secondary);"></i> Attendance Selfie Verification</h3>
+        <button class="close-btn" onclick="closeModal('modal-view-selfie')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="margin-top: 1rem;">
+        <div style="background: #000; border-radius: var(--radius-md); overflow: hidden; padding: 0.5rem; border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; min-height: 260px;">
+          <img id="view-selfie-img" src="" alt="Selfie Preview" style="max-width: 100%; max-height: 380px; border-radius: var(--radius-sm); object-fit: contain;">
+        </div>
+        <div id="view-selfie-meta" style="margin-top: 1.25rem; text-align: left; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply for Leave Modal -->
+  <div class="modal-overlay" id="modal-leave">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calendar-plus" style="color: var(--warning);"></i> Apply for Leave</h3>
+        <button class="close-btn" onclick="closeModal('modal-leave')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleLeaveSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Leave Category</label>
+          <select id="leave-type" class="glass-input" required style="background: var(--bg-input);">
+            <option value="Casual Leave">Casual Leave</option>
+            <option value="Sick Leave">Sick Leave</option>
+            <option value="Paid Annual Leave">Paid Annual Leave</option>
+            <option value="Emergency Leave">Emergency Leave</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="leave-start-date" class="glass-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="date" id="leave-end-date" class="glass-input" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Absence</label>
+          <textarea id="leave-reason" class="glass-input" placeholder="Explain brief details..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Submit Leave Application
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Employee Modal -->
+  <div class="modal-overlay" id="modal-add-emp">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus" style="color: var(--primary);"></i> Register New Employee</h3>
+        <button class="close-btn" onclick="closeModal('modal-add-emp')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleAddEmployeeSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Employee ID</label>
+          <input type="text" id="new-emp-id" class="glass-input" placeholder="e.g. EMP-103" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="new-emp-name" class="glass-input" placeholder="e.g. David Miller" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="new-emp-email" class="glass-input" placeholder="david@globaltech.com" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Department</label>
+            <input type="text" id="new-emp-dept" class="glass-input" placeholder="Engineering" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position Title</label>
+            <input type="text" id="new-emp-pos" class="glass-input" placeholder="Software Engineer" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><i class="fa-solid fa-key" style="color: var(--primary);"></i> Initial Login Password</label>
+          <input type="password" id="new-emp-pass" class="glass-input" placeholder="Set employee password (e.g. Emp@103)" required minlength="4">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Add Employee to SQLite Database
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Excel Import Modal -->
+  <div class="modal-overlay" id="modal-excel-import">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Bulk Import Employee Roster</h3>
+        <button class="close-btn" onclick="closeModal('modal-excel-import')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+        Upload an Excel spreadsheet (`.xlsx` or `.csv`) containing columns: <strong>ID, Name, Email, Department,
+          Position</strong>.
+      </p>
+      <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="glass-input"
+        style="padding: 0.5rem; margin-bottom: 1.25rem;">
+      <button class="btn btn-success" onclick="processExcelImport()" style="width: 100%;">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Import Records
+      </button>
+    </div>
+  </div>
+
+  <!-- Manual Log Modal -->
+  <div class="modal-overlay" id="modal-manual-log">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Manual Attendance Override</h3>
+        <button class="close-btn" onclick="closeModal('modal-manual-log')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleManualLogSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Select Employee</label>
+          <select id="manual-emp-select" class="glass-input" required style="background: var(--bg-input);"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Attendance Date</label>
+          <input type="date" id="manual-date" class="glass-input" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Check-In Time</label>
+            <input type="time" id="manual-checkin" class="glass-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Check-Out Time</label>
+            <input type="time" id="manual-checkout" class="glass-input" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="manual-status" class="glass-input" style="background: var(--bg-input);">
+            <option value="Present">Present</option>
+            <option value="Late Entry">Late Entry</option>
+            <option value="Half Day">Half Day</option>
+            <option value="Absent">Absent</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Save Manual Attendance Record
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Office Kiosk QR Modal -->
+  <div class="modal-overlay" id="modal-kiosk-qr">
+    <div class="modal-content" style="text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-qrcode" style="color: var(--primary);"></i> HQ Office Check-In QR Pass</h3>
+        <button class="close-btn" onclick="closeModal('modal-kiosk-qr')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">Display this QR code at the
+        entrance kiosk for instant employee attendance logging.</p>
+      <div id="kiosk-qr-display"
+        style="background: white; padding: 1.5rem; border-radius: var(--radius-md); display: inline-block; margin-bottom: 1rem;">
+      </div>
+      <div style="font-weight: 700; color: #fff; font-family: monospace;" id="kiosk-qr-text">
+        GLOBAL-HQ-AMBERNATH-SECURITY-PASS-2026</div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Database Engine & Main JavaScript App Logic -->
+  <script src="js/db-engine.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
 </html>
